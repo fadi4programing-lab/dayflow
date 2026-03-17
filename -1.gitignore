@@ -1,0 +1,46 @@
+# ── Python / Django ────────────────────────────────────────────
+venv/
+env/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+
+# Database
+db.sqlite3
+
+# Environment variables (secret keys, email password, etc.)
+.env
+.env.local
+.env.production
+
+# Django static & media files
+/static/
+/media/
+
+# ── React / Node ────────────────────────────────────────────────
+node_modules/
+dist/
+build/
+.next/
+
+# Env files
+frontend/.env
+frontend/.env.local
+frontend/.env.production
+
+# ── OS Files ────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── IDE / Editor ────────────────────────────────────────────────
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln

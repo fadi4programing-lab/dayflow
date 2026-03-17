@@ -1,0 +1,41 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background-color: #12111A;
+    color: #E2E0EE;
+    font-family: 'Outfit', sans-serif;
+  }
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #2A2840; border-radius: 2px; }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-primary hover:bg-primary-dark text-white font-semibold
+           px-4 py-2 rounded-xl text-sm transition-all duration-200 cursor-pointer border-none;
+  }
+  .btn-ghost {
+    @apply bg-transparent border border-border text-muted
+           hover:border-primary hover:text-primary
+           px-3 py-2 rounded-xl text-sm transition-all duration-200 cursor-pointer;
+  }
+  .card {
+    @apply bg-surface border border-border rounded-2xl p-5;
+  }
+  .input {
+    @apply w-full bg-base border border-border text-soft
+           rounded-xl px-4 py-3 text-sm outline-none
+           focus:border-primary transition-all duration-200 placeholder-muted;
+  }
+  .badge-high   { @apply bg-red-900/40    text-red-400    text-xs font-semibold px-2 py-0.5 rounded uppercase tracking-wide; }
+  .badge-medium { @apply bg-yellow-900/40 text-yellow-400 text-xs font-semibold px-2 py-0.5 rounded uppercase tracking-wide; }
+  .badge-low    { @apply bg-green-900/40  text-green-400  text-xs font-semibold px-2 py-0.5 rounded uppercase tracking-wide; }
+  .section-title { @apply text-xs font-semibold tracking-widest uppercase text-muted mb-3; }
+  .page-title    { @apply text-2xl font-extrabold tracking-tight text-soft; }
+}
