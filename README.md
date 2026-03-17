@@ -97,3 +97,4 @@ Now open your browser and go to http://localhost:5173 ✅
 Author
 Fadi — @fadi4programing-lab
 Built with Django REST Framework & React.js
+This project is open source and available under the MIT License.
