@@ -1,0 +1,42 @@
+# ── Python / Django ────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+ENV/
+*.egg-info/
+build/
+dist/
+
+# Database
+db.sqlite3
+*.sqlite3
+
+# Django static & media files
+staticfiles/
+media/
+
+# ── Environment variables ──────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── IDE / Editor ───────────────────────────────────────────────
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# ── OS files ───────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Node / React ───────────────────────────────────────────────
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
