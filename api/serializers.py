@@ -1,6 +1,14 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Task, Goal, TimeBlock, Note, Event, CalendarTask
+from .models import (
+    Task,
+    Goal,
+    TimeBlock,
+    Note,
+    Event,
+    CalendarTask,
+    DailyPerformanceSnapshot,
+)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -29,7 +37,7 @@ class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
         fields = '__all__'
-        read_only_fields = ['user', 'created_at']
+        read_only_fields = ['user', 'created_at', 'postponed_count', 'completed_at']
 
 
 class GoalSerializer(serializers.ModelSerializer):
@@ -67,3 +75,10 @@ class CalendarTaskSerializer(serializers.ModelSerializer):
         model = CalendarTask
         fields = '__all__'
         read_only_fields = ['user', 'notification_sent', 'created_at']
+
+
+class DailyPerformanceSnapshotSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DailyPerformanceSnapshot
+        fields = '__all__'
+        read_only_fields = ['user']
