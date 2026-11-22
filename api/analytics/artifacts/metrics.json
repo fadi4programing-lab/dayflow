@@ -1,0 +1,118 @@
+{
+  "model_version": "1.0.0",
+  "trained_at": "2026-11-22T14:25:27.764409+00:00",
+  "environment": {
+    "scikit_learn": "1.9.1",
+    "pandas": "3.1.1",
+    "numpy": "2.5.5"
+  },
+  "dataset": {
+    "rows": 5400,
+    "users": 120,
+    "days_per_user": 45,
+    "train_rows": 3960,
+    "test_rows": 1440,
+    "personas": {
+      "consistent_achiever": 1350,
+      "weekend_crammer": 1350,
+      "burnout_spiral": 1350,
+      "steady_improver": 1350
+    },
+    "burnout_labels": {
+      "low": 3666,
+      "moderate": 1395,
+      "high": 339
+    }
+  },
+  "goal_completion": {
+    "model": "GradientBoostingRegressor",
+    "mae": 4.2221,
+    "r2": 0.9287
+  },
+  "burnout_risk": {
+    "model": "RandomForestClassifier",
+    "accuracy": 0.8868,
+    "roc_auc_weighted_ovr": 0.9666,
+    "classes": [
+      "high",
+      "low",
+      "moderate"
+    ]
+  },
+  "clustering": {
+    "model": "KMeans",
+    "n_clusters": 3,
+    "silhouette_score": 0.3619,
+    "label_map": {
+      "2": "Deep Focus",
+      "0": "Steady Flow",
+      "1": "Overloaded / Drift"
+    },
+    "test_cluster_distribution": {
+      "Deep Focus": 620,
+      "Steady Flow": 592,
+      "Overloaded / Drift": 228
+    }
+  },
+  "feature_columns": [
+    "rolling_completion_rate_7",
+    "rolling_completion_rate_14",
+    "streak_length_7",
+    "streak_length_14",
+    "high_priority_delay_ratio_7",
+    "high_priority_delay_ratio_14",
+    "avg_postponement_rate_7",
+    "avg_postponement_rate_14",
+    "workload_intensity_7",
+    "workload_intensity_14",
+    "goal_task_velocity_7",
+    "goal_task_velocity_14",
+    "schedule_adherence_7",
+    "schedule_adherence_14",
+    "on_time_ratio_7",
+    "on_time_ratio_14",
+    "completion_trend_7"
+  ],
+  "top_feature_importances": [
+    {
+      "feature": "workload_intensity_14",
+      "importance": 0.2208
+    },
+    {
+      "feature": "workload_intensity_7",
+      "importance": 0.205
+    },
+    {
+      "feature": "avg_postponement_rate_14",
+      "importance": 0.0978
+    },
+    {
+      "feature": "rolling_completion_rate_7",
+      "importance": 0.0922
+    },
+    {
+      "feature": "avg_postponement_rate_7",
+      "importance": 0.0569
+    },
+    {
+      "feature": "schedule_adherence_7",
+      "importance": 0.0542
+    },
+    {
+      "feature": "schedule_adherence_14",
+      "importance": 0.0527
+    },
+    {
+      "feature": "completion_trend_7",
+      "importance": 0.0489
+    },
+    {
+      "feature": "rolling_completion_rate_14",
+      "importance": 0.0401
+    },
+    {
+      "feature": "on_time_ratio_14",
+      "importance": 0.033
+    }
+  ]
+}
