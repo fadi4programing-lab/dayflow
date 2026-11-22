@@ -7,8 +7,22 @@ class ApiConfig(AppConfig):
 
     def ready(self):
         import sys
-        # Don't run scheduler during migrations or tests
-        if 'migrate' in sys.argv or 'makemigrations' in sys.argv:
+
+        # Connect behavioral snapshot signals for every runtime path.
+        from . import signals  # noqa: F401
+
+        # Don't run the background scheduler for one-off management commands.
+        skip_scheduler_commands = {
+            'migrate',
+            'makemigrations',
+            'test',
+            'check',
+            'train_ai_engine',
+            'compute_snapshots',
+            'spectacular',
+            'collectstatic',
+        }
+        if len(sys.argv) > 1 and sys.argv[1] in skip_scheduler_commands:
             return
         try:
             from .scheduler import start

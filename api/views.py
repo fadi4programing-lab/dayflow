@@ -5,11 +5,13 @@ from rest_framework.response import Response
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
+from drf_spectacular.utils import extend_schema
 from .models import Task, Goal, TimeBlock, Note, Event, CalendarTask
 from .serializers import (
     UserSerializer, RegisterSerializer, TaskSerializer,
     GoalSerializer, TimeBlockSerializer, NoteSerializer,
-    EventSerializer, CalendarTaskSerializer
+    EventSerializer, CalendarTaskSerializer,
+    LoginSerializer, LoginResponseSerializer,
 )
 
 
@@ -21,6 +23,7 @@ class RegisterView(generics.CreateAPIView):
     permission_classes = [AllowAny]
 
 
+@extend_schema(tags=['Auth'], responses={200: UserSerializer})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def profile_view(request):
@@ -161,6 +164,11 @@ class CalendarTaskDetailView(generics.RetrieveUpdateDestroyAPIView):
     def get_queryset(self):
         return CalendarTask.objects.filter(user=self.request.user)
     
+@extend_schema(
+    tags=['Auth'],
+    request=LoginSerializer,
+    responses={200: LoginResponseSerializer},
+)
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login_view(request):

@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from .analytics import views as analytics_views
 
 urlpatterns = [
 
@@ -7,6 +8,11 @@ urlpatterns = [
     path('register/', views.RegisterView.as_view(), name='register'),
     path('login/',    views.login_view,              name='login'),
     path('profile/',  views.profile_view,            name='profile'),
+
+    # ── ANALYTICS ─────────────────────────────────
+    path('analytics/overview/', analytics_views.overview, name='analytics-overview'),
+    path('analytics/goals-forecast/', analytics_views.goals_forecast, name='analytics-goals-forecast'),
+    path('analytics/recalculate/', analytics_views.recalculate, name='analytics-recalculate'),
 
     # ── TASKS ─────────────────────────────────────
     path('tasks/',            views.TaskListCreateView.as_view(),   name='task-list'),
