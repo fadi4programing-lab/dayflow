@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getGoals, createGoal, updateGoal, deleteGoal, analyticsAPI } from '../api';
 import {
   Target, Plus, Trash2, Pencil, X,
@@ -17,9 +17,7 @@ export default function Goals() {
     title:'', description:'', progress:0, target_date:'', is_completed:false
   });
 
-  useEffect(() => { fetchGoals(); }, []);
-
-  const fetchForecasts = async () => {
+  const fetchForecasts = useCallback(async () => {
     try {
       const res = await analyticsAPI.getGoalsForecast();
       const map = {};
@@ -31,16 +29,18 @@ export default function Goals() {
       // Analytics is optional; goal management must remain usable.
       setForecasts({});
     }
-  };
+  }, []);
 
-  const fetchGoals = async () => {
+  const fetchGoals = useCallback(async () => {
     try {
       const res = await getGoals();
       setGoals(res.data);
     } catch { setError('Failed to load goals'); }
     finally  { setLoading(false); }
     fetchForecasts();
-  };
+  }, [fetchForecasts]);
+
+  useEffect(() => { fetchGoals(); }, [fetchGoals]);
 
   const openCreate = () => {
     setEditGoal(null);

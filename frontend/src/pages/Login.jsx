@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { Sparkles } from 'lucide-react';
 import { login } from '../api';
+
+const DEMO_CREDENTIALS = { username: 'demo', password: 'DemoUser@2026' };
 
 export default function Login() {
   const navigate = useNavigate();
@@ -8,12 +11,11 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const performLogin = async (credentials, failureMessage = 'Invalid username or password') => {
     setLoading(true);
     setError('');
     try {
-      const res = await login(form);
+      const res = await login(credentials);
       if (res.data.access) localStorage.setItem('access', res.data.access);
       if (res.data.refresh) localStorage.setItem('refresh', res.data.refresh);
       if (res.data.token) localStorage.setItem('token', res.data.token);
@@ -23,10 +25,20 @@ export default function Login() {
       }));
       navigate('/');
     } catch {
-      setError('Invalid username or password');
+      setError(failureMessage);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    performLogin(form);
+  };
+
+  const handleDemoLogin = () => {
+    setForm(DEMO_CREDENTIALS);
+    performLogin(DEMO_CREDENTIALS, 'Demo account is not available yet.');
   };
 
   return (
@@ -87,6 +99,32 @@ export default function Login() {
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
+
+          <div className="relative my-5">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-border" />
+            </div>
+            <div className="relative flex justify-center">
+              <span className="bg-surface px-3 text-[10px] uppercase tracking-widest text-muted">
+                or explore instantly
+              </span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleDemoLogin}
+            disabled={loading}
+            className="w-full py-3 rounded-xl border border-primary/30 bg-primary/5
+              text-primary text-sm font-semibold hover:bg-primary/10 transition-all
+              flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            <Sparkles size={15} />
+            {loading ? 'Loading demo...' : 'Try Demo Account'}
+          </button>
+          <p className="text-center text-[10px] text-muted mt-2">
+            21 days of demo AI history included.
+          </p>
 
           <p className="text-center text-muted text-sm mt-5">
             Don't have an account?{' '}
