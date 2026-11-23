@@ -1,7 +1,7 @@
 import { Navigate } from 'react-router-dom';
 
 export default function PrivateRoute({ children }) {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('access') || localStorage.getItem('token');
 
     // If no token → redirect to login page
     if (!token) {

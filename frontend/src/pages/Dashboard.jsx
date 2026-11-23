@@ -1,35 +1,57 @@
 import { useState, useEffect } from 'react';
-import { getTasks, getGoals, getEvents } from '../api';
+import { getTasks, getGoals, getEvents, analyticsAPI } from '../api';
 import {
   CheckSquare, Target, TrendingUp, Calendar,
-  Bell, Plus, Flame, Clock, AlertCircle
+  Bell, Plus, Flame, Clock, AlertCircle, Sparkles, Activity
 } from 'lucide-react';
 
 export default function Dashboard() {
   const [tasks, setTasks]     = useState([]);
   const [goals, setGoals]     = useState([]);
   const [events, setEvents]   = useState([]);
+  const [analytics, setAnalytics] = useState(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
+  const [analyticsError, setAnalyticsError] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const user  = JSON.parse(localStorage.getItem('user') || '{}');
-  const today = new Date().toISOString().split('T')[0];
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
   useEffect(() => {
-    const fetchAll = async () => {
+    let cancelled = false;
+
+    const fetchCore = async () => {
       try {
         const [t, g, e] = await Promise.all([
           getTasks(), getGoals(), getEvents()
         ]);
+        if (cancelled) return;
         setTasks(t.data);
         setGoals(g.data);
         setEvents(e.data);
       } catch (err) {
         console.error(err);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
-    fetchAll();
+
+    const fetchAnalytics = async () => {
+      try {
+        const res = await analyticsAPI.getOverview();
+        if (!cancelled) setAnalytics(res.data);
+      } catch (err) {
+        console.error(err);
+        if (!cancelled) setAnalyticsError(true);
+      } finally {
+        if (!cancelled) setAnalyticsLoading(false);
+      }
+    };
+
+    fetchCore();
+    fetchAnalytics();
+    return () => { cancelled = true; };
   }, []);
 
   const todayTasks     = tasks.filter(t => t.deadline === today);
@@ -38,6 +60,33 @@ export default function Dashboard() {
     ? Math.round((completedToday / todayTasks.length) * 100)
     : 0;
   const todayEvents = events.filter(e => e.date === today);
+
+  const weeklyScores = analytics?.daily_scores_7d || [];
+  const chartData = weeklyScores.map((point) => {
+    const pointDate = new Date(`${point.date}T00:00:00`);
+    return {
+      ...point,
+      label: pointDate.toLocaleDateString('en-US', { weekday: 'short' }),
+      isToday: point.date === today,
+    };
+  });
+  const consistencyScore = Math.min(
+    100,
+    Math.max(0, Number(analytics?.rolling_consistency_score || 0))
+  );
+  const burnoutRisk = analytics?.burnout_risk || 'low';
+  const burnoutLabel = burnoutRisk.charAt(0).toUpperCase() + burnoutRisk.slice(1);
+  const burnoutStyles = {
+    low: 'bg-green-900/40 text-green-400 border-green-800',
+    moderate: 'bg-yellow-900/40 text-yellow-400 border-yellow-800',
+    high: 'bg-red-900/40 text-red-400 border-red-800',
+  };
+  const burnoutClass = burnoutStyles[burnoutRisk] || burnoutStyles.low;
+  const modelLabel = analytics?.mode === 'hybrid'
+    ? 'Hybrid ML'
+    : analytics?.cold_start
+      ? 'Cold-start heuristic'
+      : 'Heuristic engine';
 
   const getGreeting = () => {
     const h = new Date().getHours();
@@ -55,9 +104,6 @@ export default function Dashboard() {
   };
 
   const goalColors = ['#7C6AF7','#4FC3F7','#6EE7B7','#F6AD55'];
-  const weekDays   = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-  const barHeights = [60, 40, 85, 70, 90, 30, 50];
-  const todayIndex = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
@@ -119,6 +165,104 @@ export default function Dashboard() {
             </div>
           );
         })}
+      </div>
+
+      {/* AI Consistency & Insights */}
+      <div className="card">
+        <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Sparkles size={16} className="text-primary" />
+            <span className="text-sm font-bold text-soft">AI Consistency & Insights</span>
+          </div>
+          {analytics && (
+            <span className="text-[10px] font-bold uppercase tracking-wide text-primary
+              bg-primary/10 border border-primary/30 px-2.5 py-1 rounded-lg">
+              {modelLabel}
+            </span>
+          )}
+        </div>
+
+        {analyticsLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 animate-pulse">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="h-28 rounded-xl bg-base border border-border" />
+            ))}
+          </div>
+        ) : analytics ? (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="bg-base border border-border rounded-xl p-4">
+                <div className="section-title mb-2 text-[10px]">Rolling Consistency</div>
+                <div className="flex items-center gap-4">
+                  <div
+                    className="relative w-20 h-20 rounded-full flex-shrink-0"
+                    style={{
+                      background: `conic-gradient(#7C6AF7 ${consistencyScore * 3.6}deg, #252340 0deg)`,
+                    }}
+                  >
+                    <div className="absolute inset-2 rounded-full bg-surface flex items-center justify-center">
+                      <span className="text-xl font-extrabold text-soft">
+                        {Math.round(consistencyScore)}
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-extrabold text-primary">
+                      {Math.round(consistencyScore)}
+                      <span className="text-sm text-muted">/100</span>
+                    </div>
+                    <div className="text-[11px] text-muted mt-0.5">
+                      14-day exponential score
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-base border border-border rounded-xl p-4">
+                <div className="section-title mb-2 text-[10px]">Momentum</div>
+                <div className="flex items-center gap-2">
+                  <Flame size={18} className="text-yellow-400" />
+                  <span className="text-2xl font-extrabold text-soft">
+                    {analytics.streak_days || 0}
+                  </span>
+                  <span className="text-xs text-muted">day streak</span>
+                </div>
+                <div className="flex items-center justify-between gap-2 mt-4">
+                  <span className="text-[11px] text-muted">Burnout risk</span>
+                  <span className={`text-[10px] font-bold uppercase tracking-wide
+                    px-2 py-1 rounded-lg border ${burnoutClass}`}>
+                    {burnoutLabel}
+                  </span>
+                </div>
+              </div>
+
+              <div className="bg-base border border-border rounded-xl p-4">
+                <div className="section-title mb-2 text-[10px]">Behavioral Pattern</div>
+                <div className="text-sm font-bold text-soft">
+                  {analytics.day_archetype || 'Steady Flow'}
+                </div>
+                <p className="text-[11px] text-muted mt-2 line-clamp-3 leading-relaxed">
+                  {analytics.dominant_factor ||
+                    'Log a few days of activity to unlock a behavioral insight.'}
+                </p>
+              </div>
+            </div>
+
+            {analytics.recommendations?.[0] && (
+              <div className="mt-3 flex items-start gap-2 rounded-xl border border-primary/20
+                bg-primary/5 px-3 py-2.5">
+                <Activity size={13} className="text-primary mt-0.5 flex-shrink-0" />
+                <p className="text-xs text-muted">{analytics.recommendations[0]}</p>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="rounded-xl border border-border bg-base px-4 py-5 text-xs text-muted">
+            {analyticsError
+              ? 'AI insights are unavailable right now.'
+              : 'AI insights will appear as you log daily activity.'}
+          </div>
+        )}
       </div>
 
       {/* Middle row */}
@@ -310,58 +454,79 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Performance */}
+      {/* 7-Day Consistency */}
       <div className="card">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
           <div className="flex items-center gap-2">
             <TrendingUp size={16} className="text-primary" />
-            <span className="text-sm font-bold text-soft">This Week</span>
+            <span className="text-sm font-bold text-soft">7-Day Consistency</span>
           </div>
-          <div className="flex items-center gap-1.5 text-xs text-yellow-400 font-semibold">
-            <Flame size={13} />
-            <span className="hidden sm:inline">
-              {tasks.filter(t => t.is_completed).length} tasks completed
-            </span>
-            <span className="sm:hidden">
-              {tasks.filter(t => t.is_completed).length} done
-            </span>
+          <div className="flex items-center gap-3">
+            {analytics && (
+              <span className="text-xs font-bold text-primary">
+                {Math.round(consistencyScore)}/100 rolling
+              </span>
+            )}
+            <div className="flex items-center gap-1.5 text-xs text-yellow-400 font-semibold">
+              <Flame size={13} />
+              <span className="hidden sm:inline">
+                {analytics
+                  ? `${analytics.streak_days || 0} day streak`
+                  : `${tasks.filter(t => t.is_completed).length} tasks completed`}
+              </span>
+              <span className="sm:hidden">
+                {analytics
+                  ? `${analytics.streak_days || 0}d`
+                  : `${tasks.filter(t => t.is_completed).length} done`}
+              </span>
+            </div>
           </div>
         </div>
 
-        <div className="flex items-end gap-1 md:gap-2 h-24 px-1">
-          {weekDays.map((day, i) => {
-            const isToday = i === todayIndex;
-            return (
-              <div key={day} className="flex-1 flex flex-col items-center gap-1">
-                {isToday && (
-                  <div className="text-[9px] text-primary font-bold">{barHeights[i]}%</div>
+        {chartData.length === 0 ? (
+          <div className="h-24 flex items-center justify-center text-xs text-muted">
+            Daily scores will appear after your first analytics snapshot.
+          </div>
+        ) : (
+          <div className="flex items-end gap-1 md:gap-2 h-24 px-1">
+            {chartData.map((point) => (
+              <div
+                key={point.date}
+                className="flex-1 flex flex-col items-center gap-1"
+                title={`${point.date}: ${Math.round(point.score)}%`}
+              >
+                {point.isToday && (
+                  <div className="text-[9px] text-primary font-bold">
+                    {Math.round(point.score)}%
+                  </div>
                 )}
                 <div className="w-full flex-1 flex items-end">
                   <div
                     className="w-full rounded-t-lg transition-all duration-500"
                     style={{
-                      height:`${barHeights[i]}%`,
-                      background: isToday
+                      height: `${Math.max(0, Math.min(100, point.score))}%`,
+                      background: point.isToday
                         ? 'linear-gradient(180deg,#7C6AF7,#5B4ECC)'
                         : '#252340',
-                      minHeight:'8px',
+                      minHeight: '8px',
                     }}
                   />
                 </div>
-                <div className={`text-[10px] font-medium ${isToday ? 'text-primary' : 'text-muted'}`}>
-                  {day}
+                <div className={`text-[10px] font-medium
+                  ${point.isToday ? 'text-primary' : 'text-muted'}`}>
+                  {point.label}
                 </div>
               </div>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        )}
 
         <div className="flex items-center gap-4 md:gap-6 mt-4 pt-3 border-t border-border flex-wrap">
           <div className="flex items-center gap-2 text-xs text-muted">
             <div className="w-3 h-3 rounded-sm bg-primary" /> Today
           </div>
           <div className="flex items-center gap-2 text-xs text-muted">
-            <div className="w-3 h-3 rounded-sm bg-border" /> Other days
+            <div className="w-3 h-3 rounded-sm bg-border" /> Daily score
           </div>
           <div className="ml-auto flex items-center gap-1.5 text-xs text-muted">
             <AlertCircle size={11} />

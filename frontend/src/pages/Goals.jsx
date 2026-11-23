@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
-import { getGoals, createGoal, updateGoal, deleteGoal } from '../api';
+import { getGoals, createGoal, updateGoal, deleteGoal, analyticsAPI } from '../api';
 import {
   Target, Plus, Trash2, Pencil, X,
-  Check, AlertCircle, Calendar, TrendingUp, CheckCircle
+  Check, AlertCircle, Calendar, TrendingUp, CheckCircle, Sparkles
 } from 'lucide-react';
 
 export default function Goals() {
   const [goals, setGoals]       = useState([]);
+  const [forecasts, setForecasts] = useState({});
   const [loading, setLoading]   = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editGoal, setEditGoal] = useState(null);
@@ -18,12 +19,27 @@ export default function Goals() {
 
   useEffect(() => { fetchGoals(); }, []);
 
+  const fetchForecasts = async () => {
+    try {
+      const res = await analyticsAPI.getGoalsForecast();
+      const map = {};
+      res.data.goals.forEach((forecast) => {
+        map[forecast.id] = forecast;
+      });
+      setForecasts(map);
+    } catch {
+      // Analytics is optional; goal management must remain usable.
+      setForecasts({});
+    }
+  };
+
   const fetchGoals = async () => {
     try {
       const res = await getGoals();
       setGoals(res.data);
     } catch { setError('Failed to load goals'); }
     finally  { setLoading(false); }
+    fetchForecasts();
   };
 
   const openCreate = () => {
@@ -56,6 +72,7 @@ export default function Goals() {
         setGoals(prev => [res.data, ...prev]);
       }
       setShowForm(false);
+      fetchForecasts();
     } catch { setError('Failed to save goal'); }
     finally  { setSaving(false); }
   };
@@ -64,6 +81,7 @@ export default function Goals() {
     try {
       await deleteGoal(id);
       setGoals(prev => prev.filter(g => g.id !== id));
+      fetchForecasts();
     } catch { setError('Failed to delete goal'); }
   };
 
@@ -75,10 +93,17 @@ export default function Goals() {
         progress: !goal.is_completed ? 100 : goal.progress,
       });
       setGoals(prev => prev.map(g => g.id === goal.id ? res.data : g));
+      fetchForecasts();
     } catch { setError('Failed to update goal'); }
   };
 
   const goalColors = ['#7C6AF7','#4FC3F7','#6EE7B7','#F6AD55','#F87171','#C4B5FD'];
+  const probabilityStyle = (probability) => {
+    const value = Number(probability || 0);
+    if (value >= 70) return 'bg-green-900/40 text-green-400 border-green-800';
+    if (value >= 40) return 'bg-yellow-900/40 text-yellow-400 border-yellow-800';
+    return 'bg-red-900/40 text-red-400 border-red-800';
+  };
   const active     = goals.filter(g => !g.is_completed);
   const completed  = goals.filter(g => g.is_completed);
   const avgProgress = goals.length
@@ -155,6 +180,10 @@ export default function Goals() {
           </div>
           {active.map((goal, i) => {
             const c = goalColors[i % goalColors.length];
+            const forecast = forecasts[goal.id];
+            const probability = forecast
+              ? Math.round(forecast.completion_probability)
+              : null;
             return (
               <div key={goal.id} className="card group">
                 <div className="flex items-start gap-3 md:gap-4">
@@ -167,7 +196,21 @@ export default function Goals() {
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-bold text-soft mb-0.5">{goal.title}</div>
+                    <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                      <div className="text-sm font-bold text-soft">{goal.title}</div>
+                      {probability !== null && (
+                        <span
+                          className={`inline-flex items-center gap-1 text-[10px] font-bold
+                            px-2 py-0.5 rounded-lg border ${probabilityStyle(probability)}`}
+                          title={`AI completion probability${forecast.risk_status
+                            ? ` · ${forecast.risk_status} risk`
+                            : ''}`}
+                        >
+                          <Sparkles size={9} />
+                          {probability}% AI
+                        </span>
+                      )}
+                    </div>
                     {goal.description && (
                       <div className="text-xs text-muted mb-2 line-clamp-2">
                         {goal.description}

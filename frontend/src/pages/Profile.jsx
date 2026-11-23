@@ -1,20 +1,33 @@
 import { useState, useEffect } from 'react';
-import { getProfile, getTasks, getGoals, getNotes, getTimeBlocks } from '../api';
+import { getProfile, getTasks, getGoals, getNotes, getTimeBlocks, analyticsAPI } from '../api';
 import {
   User, Mail, Shield, Calendar,
   CheckSquare, Target, StickyNote,
-  Clock, TrendingUp, Edit, Save, X
+  Clock, TrendingUp, Edit, Save, X, Sparkles, Activity
 } from 'lucide-react';
 
 export default function Profile() {
   const [profile, setProfile] = useState(null);
   const [stats, setStats]     = useState(null);
+  const [analytics, setAnalytics] = useState(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [error, setError]     = useState('');
   const [form, setForm]       = useState({ first_name:'', last_name:'', email:'' });
 
-  useEffect(() => { fetchAll(); }, []);
+  useEffect(() => { fetchAll(); fetchAnalytics(); }, []);
+
+  const fetchAnalytics = async () => {
+    try {
+      const res = await analyticsAPI.getOverview();
+      setAnalytics(res.data);
+    } catch {
+      setAnalytics(null);
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  };
 
   const fetchAll = async () => {
     try {
@@ -54,6 +67,16 @@ export default function Profile() {
         month:'long', day:'numeric', year:'numeric'
       })
     : 'N/A';
+
+  const consistencyScore = Math.min(
+    100,
+    Math.max(0, Number(analytics?.rolling_consistency_score || 0))
+  );
+  const analyticsModelLabel = analytics?.mode === 'hybrid'
+    ? 'Hybrid ML'
+    : analytics?.cold_start
+      ? 'Heuristic · cold start'
+      : 'Heuristic engine';
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
@@ -212,6 +235,82 @@ export default function Profile() {
             );
           })}
         </div>
+      </div>
+
+      {/* AI Performance & Consistency Index */}
+      <div className="card">
+        <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Sparkles size={15} className="text-primary" />
+            <span className="text-sm font-bold text-soft">
+              AI Performance & Consistency Index
+            </span>
+          </div>
+          {analytics && (
+            <span className="text-[10px] font-bold uppercase tracking-wide text-primary
+              bg-primary/10 border border-primary/30 px-2.5 py-1 rounded-lg">
+              {analyticsModelLabel}
+            </span>
+          )}
+        </div>
+
+        {analyticsLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 animate-pulse">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="h-24 rounded-xl bg-base border border-border" />
+            ))}
+          </div>
+        ) : analytics ? (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="bg-base border border-border rounded-xl p-3">
+                <div className="section-title mb-2 text-[10px]">Rolling Consistency</div>
+                <div className="text-2xl font-extrabold text-primary">
+                  {Math.round(consistencyScore)}
+                  <span className="text-xs text-muted">/100</span>
+                </div>
+                <div className="h-1.5 bg-surface rounded-full overflow-hidden mt-2">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all duration-700"
+                    style={{ width: `${consistencyScore}%` }}
+                  />
+                </div>
+              </div>
+
+              <div className="bg-base border border-border rounded-xl p-3">
+                <div className="section-title mb-2 text-[10px]">Behavioral Pattern</div>
+                <div className="text-sm font-bold text-soft">
+                  {analytics.day_archetype || 'Steady Flow'}
+                </div>
+                <div className="text-[10px] text-muted mt-1">
+                  {analytics.streak_days || 0} day streak
+                </div>
+              </div>
+
+              <div className="bg-base border border-border rounded-xl p-3">
+                <div className="section-title mb-2 text-[10px]">Model Status</div>
+                <div className="text-sm font-bold text-soft">{analyticsModelLabel}</div>
+                <div className="text-[10px] text-muted mt-1">
+                  {analytics.mode === 'hybrid'
+                    ? 'Live hybrid inference'
+                    : analytics.cold_start
+                      ? `${analytics.history_days || 0}/14 snapshot days`
+                      : 'Heuristic fallback'}
+                </div>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted mt-3 flex items-start gap-2">
+              <Activity size={12} className="text-primary mt-0.5 flex-shrink-0" />
+              {analytics.dominant_factor ||
+                'Keep logging activity to sharpen the behavioral index.'}
+            </p>
+          </>
+        ) : (
+          <p className="text-xs text-muted">
+            AI analytics will appear after your first tracked day.
+          </p>
+        )}
       </div>
 
       {/* Progress bars */}

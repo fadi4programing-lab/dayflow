@@ -14,7 +14,9 @@ export default function Login() {
     setError('');
     try {
       const res = await login(form);
-      localStorage.setItem('token', res.data.token);
+      if (res.data.access) localStorage.setItem('access', res.data.access);
+      if (res.data.refresh) localStorage.setItem('refresh', res.data.refresh);
+      if (res.data.token) localStorage.setItem('token', res.data.token);
       localStorage.setItem('user', JSON.stringify({
         username: res.data.username,
         email: res.data.email,

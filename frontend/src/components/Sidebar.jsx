@@ -4,6 +4,7 @@ import {
   Target, StickyNote, Calendar, LogOut,
   Zap, X
 } from 'lucide-react';
+import { clearStoredAuth } from '../api';
 
 const NAV = [
   { name:'Dashboard', path:'/',         icon: LayoutDashboard },
@@ -26,8 +27,7 @@ export default function Sidebar({ open, setOpen }) {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    clearStoredAuth();
     navigate('/login');
   };
 
